@@ -17,10 +17,12 @@ create table if not exists public.video_jobs (
   error_message text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  constraint video_jobs_prompt_length_check check (char_length(prompt) <= 1200),
   constraint video_jobs_mode_input_check check (
-    (mode = 'text' and length(trim(prompt)) > 0)
+    (mode = 'text' and length(trim(prompt)) > 0 and input_image_path is null)
     or
-    (mode = 'image' and input_image_path is not null)
+    (mode = 'image' and input_image_path is not null
+      and split_part(input_image_path, '/', 1) = user_id::text)
   )
 );
 
@@ -39,7 +41,13 @@ drop policy if exists "Users can create their own video jobs" on public.video_jo
 create policy "Users can create their own video jobs"
   on public.video_jobs for insert
   to authenticated
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and status = 'queued'
+    and output_video_path is null
+    and provider_job_id is null
+    and error_message is null
+  );
 
 -- Status changes and provider metadata must be performed by trusted server-side code,
 -- not directly by the browser. The service role bypasses RLS and must never be exposed.
