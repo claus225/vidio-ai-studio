@@ -1,0 +1,13 @@
+project_id = "vidio-ai-studio"
+
+[api]
+enabled = true
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+major_version = 15
+
+[functions.create-video]
+verify_jwt = true
