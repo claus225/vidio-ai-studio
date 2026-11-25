@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#080b16">
+<title>NEON RUSH — Monde ouvert</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b16;color:#fff;font-family:system-ui,Arial}#world{position:fixed;inset:0}canvas{display:block;width:100%;height:100%;touch-action:none}
+#top{position:fixed;top:max(12px,env(safe-area-inset-top));left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;text-shadow:0 2px 8px #000;font-weight:800}.brand{letter-spacing:2px}.brand b{color:#19e6ff}.pill{background:#08172cdb;border:1px solid #1be4ff88;border-radius:12px;padding:8px 11px;font-size:12px}
+#tip{position:fixed;top:58px;left:50%;transform:translateX(-50%);background:#061327b8;padding:7px 12px;border-radius:10px;font-size:12px;white-space:nowrap;text-align:center}
+#panel{position:fixed;inset:0;display:grid;place-items:center;background:#020611aa;padding:20px}.card{width:min(440px,94vw);background:#0b1530f2;border:1px solid #16ddff88;border-radius:22px;padding:24px;text-align:center;box-shadow:0 0 50px #00cfff25}.card h1{font-size:clamp(30px,8vw,48px);margin:0;color:#fff}.card h1 span{color:#18e6ff}.card p{color:#c5d4ed;line-height:1.5}.card button{background:linear-gradient(100deg,#19dff8,#7c7cff);color:#07101e;font-weight:900;border:0;border-radius:13px;padding:14px 25px;font-size:17px}
+#touch{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:space-between;padding:0 18px;pointer-events:none}.cluster{display:flex;gap:10px;align-items:end;pointer-events:auto}.touchbtn{width:62px;height:60px;border-radius:16px;border:1px solid #8beeff88;background:#071a32dd;color:white;font-size:24px;font-weight:900;touch-action:none;user-select:none}.touchbtn.wide{width:76px;font-size:13px}
+#mode{position:fixed;right:14px;top:104px;font-size:11px;color:#a9c6e8;text-align:right}
+@media(min-width:850px){#touch{opacity:.35}.touchbtn{width:54px;height:50px}}
+</style>
+</head>
+<body>
+<div id="world"></div>
+<div id="top"><div class="brand">NEON <b>RUSH</b> / CITY</div><div class="pill">MODE : <span id="modeLabel">À PIED</span></div></div>
+<div id="tip">WASD / flèches : bouger · E : entrer/sortir du véhicule · Mobile : boutons</div>
+<div id="mode">Prototype monde ouvert<br>Zone de démonstration</div>
+<div id="touch">
+ <div class="cluster"><button class="touchbtn" data-key="left">◀</button><button class="touchbtn" data-key="right">▶</button></div>
+ <div class="cluster"><button class="touchbtn" data-key="forward">▲</button><button class="touchbtn" data-key="back">▼</button><button class="touchbtn wide" id="enter">ENTRER (E)</button></div>
+</div>
+<div id="panel"><div class="card"><h1>NEON <span>CITY</span></h1><p>Explore une petite ville 3D, marche dans les rues et prends le volant près de la voiture.</p><p><b>Prototype technique — Android et PC</b></p><button id="start">JOUER</button></div></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+const root=document.querySelector('#world');
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x080d1b); scene.fog=new THREE.Fog(0x080d1b,42,155);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,240);
+const renderer=new THREE.WebGLRenderer({antialias:innerWidth>760,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,innerWidth<760?1.35:1.8));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=innerWidth>760;renderer.shadowMap.type=THREE.PCFSoftShadowMap;root.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0x8bbcff,0x172033,2));
+const sun=new THREE.DirectionalLight(0xd7e8ff,2.2);sun.position.set(-25,45,18);sun.castShadow=innerWidth>760;scene.add(sun);
+const mat=(c,e=0,ei=0)=>new THREE.MeshStandardMaterial({color:c,emissive:e,emissiveIntensity:ei,roughness:.78});
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(190,190),mat(0x151e31));ground.rotation.x=-Math.PI/2;ground.position.y=-.08;ground.receiveShadow=true;scene.add(ground);
+const roadMat=mat(0x20283a),lineMat=mat(0x9cb5d0,0x14304b,.35);
+for(let i=-4;i<=4;i++){let road=new THREE.Mesh(new THREE.PlaneGeometry(9,180),roadMat);road.rotation.x=-Math.PI/2;road.position.set(i*24,0,0);scene.add(road);let cross=new THREE.Mesh(new THREE.PlaneGeometry(180,9),roadMat);cross.rotation.x=-Math.PI/2;cross.position.set(0,.005,i*24);scene.add(cross);for(let k=-3;k<=3;k++){let l=new THREE.Mesh(new THREE.BoxGeometry(.12,.025,2.4),lineMat);l.position.set(i*24,.025,k*24);scene.add(l);let l2=new THREE.Mesh(new THREE.BoxGeometry(2.4,.025,.12),lineMat);l2.position.set(k*24,.025,i*24);scene.add(l2)}}
+const cyan=mat(0x071d2b,0x00cfff,2.2),pink=mat(0x2b0b29,0xff2da8,1.7);
+const buildingMats=[0x27334a,0x1c2b42,0x30334c,0x20394b,0x342b48].map(c=>mat(c));
+for(let x=-3;x<=3;x++)for(let z=-3;z<=3;z++){if(Math.abs(x)%1===0&&Math.abs(z)%1===0&&((x+z)%2===0))continue;const bx=x*24+(Math.random()-.5)*7,bz=z*24+(Math.random()-.5)*7,w=7+Math.random()*6,d=7+Math.random()*6,h=9+Math.random()*29;const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),buildingMats[Math.floor(Math.random()*buildingMats.length)]);b.position.set(bx,h/2,bz);b.castShadow=true;b.receiveShadow=true;scene.add(b);for(let side of [-1,1]){const strip=new THREE.Mesh(new THREE.BoxGeometry(.13,h*.72,.16),Math.random()>.5?cyan:pink);strip.position.set(bx+side*(w/2+.08),h*.5,bz+d/2+.1);scene.add(strip)}}
+function makePerson(){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CapsuleGeometry(.48,.85,4,8),mat(0x13cde8,0x064b66,.7));body.position.y=1.1;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.28,12,10),mat(0xffc99e));head.position.y=1.92;g.add(head);const visor=new THREE.Mesh(new THREE.BoxGeometry(.42,.12,.12),mat(0x09111f,0x00dfff,1.8));visor.position.set(0,1.94,.25);g.add(visor);return g}
+const player=makePerson();player.position.set(0,0,7);scene.add(player);
+function makeCar(){const g=new THREE.Group();const base=new THREE.Mesh(new THREE.BoxGeometry(2.3,.75,4.2),mat(0x101c35,0x073d70,.6));base.position.y=.72;g.add(base);const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.75,.8,2.1),mat(0x1c3b59,0x00aaff,.35));cabin.position.set(0,1.38,-.15);g.add(cabin);const glow=new THREE.Mesh(new THREE.BoxGeometry(2.4,.08,4.3),cyan);glow.position.y=.28;g.add(glow);for(const x of [-1,1])for(const z of [-1.35,1.35]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.22,12),mat(0x080a11));wheel.rotation.z=Math.PI/2;wheel.position.set(x,.42,z);g.add(wheel)}return g}
+const car=makeCar();car.position.set(3,0,7);scene.add(car);
+const keys={};let active=false,inCar=false,speed=0,heading=0;
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase()))e.preventDefault();if(e.key.toLowerCase()==='e')toggleCar()},{passive:false});
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+document.querySelectorAll('[data-key]').forEach(b=>{const k=b.dataset.key;const map={left:'arrowleft',right:'arrowright',forward:'arrowup',back:'arrowdown'};b.addEventListener('pointerdown',e=>{e.preventDefault();keys[map[k]]=true;b.setPointerCapture(e.pointerId)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys[map[k]]=false)});
+document.querySelector('#enter').addEventListener('pointerdown',e=>{e.preventDefault();toggleCar()});
+function toggleCar(){if(!active)return;if(!inCar&&player.position.distanceTo(car.position)<5){inCar=true;player.visible=false;document.querySelector('#modeLabel').textContent='CONDUITE'}else if(inCar){inCar=false;player.visible=true;player.position.copy(car.position).add(new THREE.Vector3(2,0,0));document.querySelector('#modeLabel').textContent='À PIED'}}
+function clampCity(o){o.position.x=THREE.MathUtils.clamp(o.position.x,-83,83);o.position.z=THREE.MathUtils.clamp(o.position.z,-83,83)}
+function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.04);if(active){const forward=keys.w||keys.arrowup,back=keys.s||keys.arrowdown,left=keys.a||keys.arrowleft,right=keys.d||keys.arrowright;if(inCar){if(forward)speed=Math.min(speed+dt*13,22);else if(back)speed=Math.max(speed-dt*18,-7);else speed*=.985;if(left)heading+=dt*1.7*(.35+Math.abs(speed)/22);if(right)heading-=dt*1.7*(.35+Math.abs(speed)/22);car.rotation.y=heading;car.position.x+=Math.sin(heading)*speed*dt;car.position.z+=Math.cos(heading)*speed*dt;clampCity(car);const target=car.position.clone().add(new THREE.Vector3(0,5.5, -10).applyAxisAngle(new THREE.Vector3(0,1,0),heading));camera.position.lerp(target,.09);camera.lookAt(car.position.x,1,car.position.z)}else{const dir=new THREE.Vector3((right?1:0)-(left?1:0),0,(back?1:0)-(forward?1:0));if(dir.lengthSq()){dir.normalize();player.position.addScaledVector(dir,dt*8);player.rotation.y=Math.atan2(dir.x,dir.z)}clampCity(player);const target=player.position.clone().add(new THREE.Vector3(0,5.5,-9));camera.position.lerp(target,.1);camera.lookAt(player.position.x,1,player.position.z);if(player.position.distanceTo(car.position)<5)document.querySelector('#tip').textContent='Appuie sur E / ENTRER pour conduire';else document.querySelector('#tip').textContent='WASD / flèches : bouger · Approche la voiture pour conduire'} }renderer.render(scene,camera)}
+const clock=new THREE.Clock();camera.position.set(0,6, -3);camera.lookAt(0,0,8);document.querySelector('#start').addEventListener('click',()=>{active=true;document.querySelector('#panel').style.display='none';clock.start()});loop();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,innerWidth<760?1.35:1.8));renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body></html>
